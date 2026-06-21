@@ -97,6 +97,9 @@
   .results-inner{border:1px solid var(--color-border); background:var(--color-surface); border-radius:16px; padding:14px 16px;
         display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
   @media (min-width:640px){ .results-inner{grid-template-columns:repeat(4,1fr);} }
+  .results-top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+  .kpis{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+  @media (min-width:640px){ .kpis{grid-template-columns:repeat(4,1fr);} }
   .kpi .eyebrow{display:block; margin-bottom:2px;}
   .kpi .val{font-size:24px; font-weight:700; letter-spacing:-0.04em; line-height:1;}
   .kpi .sub{font-size:11px; color:var(--color-ink-soft); margin-top:2px;}
@@ -169,19 +172,24 @@
       <h1>Relationship <span class="accent">Profitability</span></h1>
       <p class="muted" style="margin-top:6px;">Roll a full client relationship — facilities, deposits &amp; fees — into one ROE &amp; RAROC for the credit package.</p>
     </div>
-    <div class="no-print" style="flex:none; text-align:right;">
-      <button class="btn btn-primary" id="saveBtn">Save</button>
-      <p class="meta" id="saveHint" style="margin-top:4px;">Auto-saves as you type</p>
-    </div>
   </header>
 
-  <!-- LIVE RESULTS -->
+  <!-- LIVE RESULTS (sticky) -->
   <div class="results no-print">
-    <div class="results-inner">
-      <div class="kpi"><span class="eyebrow">Relationship ROE</span><div class="val" id="k-roe">—</div><div class="sub" id="k-roe-sub">after-tax ÷ allocated capital</div></div>
-      <div class="kpi"><span class="eyebrow">RAROC</span><div class="val" id="k-raroc">—</div><div class="sub" id="k-raroc-sub">pre-tax ÷ economic capital</div></div>
-      <div class="kpi"><span class="eyebrow">NPV (life)</span><div class="val" id="k-npv">—</div><div class="sub" id="k-npv-sub">today's $</div></div>
-      <div class="kpi"><span class="eyebrow">Verdict</span><div style="margin-top:4px;"><span class="verdict" id="k-verdict">—</span></div><div class="sub" id="k-verdict-sub"></div></div>
+    <div class="results-inner" style="display:block;">
+      <div class="results-top">
+        <span class="eyebrow">Live results</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="meta" id="saveHint">Auto-saves as you type</span>
+          <button class="btn btn-primary btn-sm" id="saveBtn">Save</button>
+        </div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><span class="eyebrow">Relationship ROE</span><div class="val" id="k-roe">—</div><div class="sub" id="k-roe-sub">after-tax ÷ allocated capital</div></div>
+        <div class="kpi"><span class="eyebrow">RAROC</span><div class="val" id="k-raroc">—</div><div class="sub" id="k-raroc-sub">pre-tax ÷ economic capital</div></div>
+        <div class="kpi"><span class="eyebrow">NPV (life)</span><div class="val" id="k-npv">—</div><div class="sub" id="k-npv-sub">today's $</div></div>
+        <div class="kpi"><span class="eyebrow">Verdict</span><div style="margin-top:4px;"><span class="verdict" id="k-verdict">—</span></div><div class="sub" id="k-verdict-sub"></div></div>
+      </div>
     </div>
     <p class="meta" style="margin-top:8px; text-align:center;">Illustrative defaults — confirm tax, capital ratio, hurdle and risk inputs against the bank's own figures before any real credit decision.</p>
   </div>
