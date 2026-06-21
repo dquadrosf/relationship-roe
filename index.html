@@ -411,13 +411,18 @@
         <span class="lbl">Facility type {{TIP:What kind of credit this is. Sets default risk weight and credit-conversion factor (you can override both below). Letters of credit and undrawn commitments are sized by their CCF.}}</span>
         <select class="in-blue" data-x="type">
           <option value="term">Term Loan</option>
+          <option value="termb">Term Loan B (bullet / leveraged)</option>
           <option value="revolver">Revolver / Line of Credit</option>
+          <option value="abl">Asset-Based Line (ABL)</option>
+          <option value="ddtl">Delayed-Draw Term Loan</option>
           <option value="cre">CRE (investor real estate)</option>
           <option value="oore">Owner-Occupied RE</option>
           <option value="ci">Equipment / C&amp;I</option>
-          <option value="lc">Letter of Credit</option>
-          <option value="bridge">Bridge</option>
           <option value="construction">Construction</option>
+          <option value="bridge">Bridge</option>
+          <option value="standbylc">Standby Letter of Credit</option>
+          <option value="commerciallc">Commercial / Trade LC</option>
+          <option value="mezz">Mezzanine / Subordinated</option>
         </select>
       </div>
       <div class="field">
@@ -671,10 +676,14 @@ var ICONS = {
 })();
 
 /* ---------- defaults / example ---------- */
+// Illustrative risk weight (%) + credit-conversion factor (%) by facility type — editable per facility.
 var TYPE_DEFAULTS = {
-  term:{rw:100,ccf:0,util:''}, revolver:{rw:100,ccf:50,util:40}, cre:{rw:100,ccf:50,util:''},
-  oore:{rw:100,ccf:50,util:''}, ci:{rw:100,ccf:50,util:''}, lc:{rw:100,ccf:50,util:0},
-  bridge:{rw:100,ccf:50,util:''}, construction:{rw:100,ccf:50,util:''}
+  term:{rw:100,ccf:0,util:''}, termb:{rw:100,ccf:0,util:''},
+  revolver:{rw:100,ccf:50,util:40}, abl:{rw:100,ccf:50,util:50}, ddtl:{rw:100,ccf:50,util:50},
+  cre:{rw:100,ccf:50,util:''}, oore:{rw:100,ccf:50,util:''}, ci:{rw:100,ccf:50,util:''},
+  construction:{rw:100,ccf:50,util:''}, bridge:{rw:100,ccf:50,util:''},
+  lc:{rw:100,ccf:50,util:0}, standbylc:{rw:100,ccf:100,util:0}, commerciallc:{rw:100,ccf:20,util:0},
+  mezz:{rw:150,ccf:0,util:''}
 };
 // Illustrative 1–14 grade scale (off by default; replace with the bank's master scale).
 var RATING_PD = {1:0.02,2:0.03,3:0.05,4:0.08,5:0.12,6:0.20,7:0.35,8:0.60,9:1.00,10:2.00,11:4.00,12:8.00,13:15.0,14:25.0};
@@ -807,7 +816,7 @@ function readBucket(attr){
 }
 
 /* ---------- typenames ---------- */
-var TYPE_LABEL = { term:'Term Loan', revolver:'Revolver', cre:'CRE', oore:'Owner-Occ RE', ci:'Equipment / C&I', lc:'Letter of Credit', bridge:'Bridge', construction:'Construction' };
+var TYPE_LABEL = { term:'Term Loan', termb:'Term Loan B', revolver:'Revolver', abl:'Asset-Based Line', ddtl:'Delayed-Draw TL', cre:'CRE', oore:'Owner-Occ RE', ci:'Equipment / C&I', construction:'Construction', bridge:'Bridge', lc:'Letter of Credit', standbylc:'Standby LC', commerciallc:'Commercial / Trade LC', mezz:'Mezzanine' };
 
 /* ---------- validation ---------- */
 function facilityWarnings(o){
