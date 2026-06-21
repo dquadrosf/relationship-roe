@@ -169,6 +169,10 @@
       <h1>Relationship <span class="accent">Profitability</span></h1>
       <p class="muted" style="margin-top:6px;">Roll a full client relationship — facilities, deposits &amp; fees — into one ROE &amp; RAROC for the credit package.</p>
     </div>
+    <div class="no-print" style="flex:none; text-align:right;">
+      <button class="btn btn-primary" id="saveBtn">Save</button>
+      <p class="meta" id="saveHint" style="margin-top:4px;">Auto-saves as you type</p>
+    </div>
   </header>
 
   <!-- LIVE RESULTS -->
@@ -190,7 +194,7 @@
         <span style="color:var(--color-brand); flex:none;">{{SPARKLES}}</span>
         <div>
           <h3 style="color:var(--color-brand-dark);">How to use this</h3>
-          <p class="muted" style="margin-top:4px;">Fill the <b style="color:var(--color-brand-dark)">blue fields</b>. Everything grey is calculated for you. Hover the <b>ⓘ</b> on any label to see what it means. Add as many facilities as the relationship has, then read the ROE up top or print the summary at the bottom. The page opens with an example you can overwrite.</p>
+          <p class="muted" style="margin-top:4px;">Fill the <b style="color:var(--color-brand-dark)">blue fields</b>. Everything grey is calculated for you. Hover the <b>ⓘ</b> on any label to see what it means. Add as many facilities as the relationship has, then read the ROE up top or print the summary at the bottom. Everything you type is <b style="color:var(--color-brand-dark)">saved in this browser</b> as you go, so you won't lose it.</p>
           <div class="legend"><span><i class="swatch-blue"></i>You fill in</span><span><i class="swatch-grey"></i>Calculated</span></div>
         </div>
       </div>
@@ -373,7 +377,6 @@
 
     <div class="no-print" style="display:flex; gap:10px;">
       <button class="btn btn-ghost btn-sm" id="clearBtn">Clear all</button>
-      <button class="btn btn-ghost btn-sm" id="exampleBtn">Reload example</button>
     </div>
 
     <footer>
@@ -454,6 +457,7 @@
           <option value="">—</option>
           <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
           <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+          <option>11</option><option>12</option><option>13</option><option>14</option>
         </select>
       </div>
       <div class="field">
@@ -664,17 +668,42 @@ var TYPE_DEFAULTS = {
   oore:{rw:100,ccf:50,util:''}, ci:{rw:100,ccf:50,util:''}, lc:{rw:100,ccf:50,util:0},
   bridge:{rw:100,ccf:50,util:''}, construction:{rw:100,ccf:50,util:''}
 };
-var RATING_PD = {1:0.03,2:0.05,3:0.08,4:0.15,5:0.30,6:0.60,7:1.50,8:4.00,9:10.0,10:25.0};
+// Illustrative 1–14 grade scale (off by default; replace with the bank's master scale).
+var RATING_PD = {1:0.02,2:0.03,3:0.05,4:0.08,5:0.12,6:0.20,7:0.35,8:0.60,9:1.00,10:2.00,11:4.00,12:8.00,13:15.0,14:25.0};
 
 var EXAMPLE = [
   { name:'Term Loan A', type:'term', committed:3000000, avgOut:3000000, util:'', life:5, rateMode:'allIn', allInRate:7.00, spread:2.50, upfrontFee:15000, unusedFeePct:0, rating:'5', pd:0.30, lgd:40, riskWeight:100, ccf:0 },
   { name:'Revolver', type:'revolver', committed:2000000, avgOut:0, util:40, life:3, rateMode:'spread', allInRate:7.00, spread:2.50, upfrontFee:10000, unusedFeePct:0.25, rating:'6', pd:0.60, lgd:40, riskWeight:100, ccf:50 }
 ];
 
-/* ---------- formatters ---------- */
-function fmtUSD(v){ if(v==null||!isFinite(v)) return '—'; return (v<0?'-':'')+'$'+Math.abs(Math.round(v)).toLocaleString('en-US'); }
-function fmtUSDk(v){ if(v==null||!isFinite(v)) return '—'; var a=Math.abs(v); if(a>=1000) return (v<0?'-':'')+'$'+(Math.abs(v)/1000).toFixed(0)+'k'; return fmtUSD(v); }
-function fmtPct(v,d){ if(v==null||!isFinite(v)) return '—'; return (v*100).toFixed(d==null?1:d)+'%'; }
+/* ---------- formatters (pt-BR: 1.234.567 e 26,6%) ---------- */
+function fmtUSD(v){ if(v==null||!isFinite(v)) return '—'; return (v<0?'-':'')+'$'+Math.abs(Math.round(v)).toLocaleString('pt-BR'); }
+function fmtUSDk(v){ if(v==null||!isFinite(v)) return '—'; var a=Math.abs(v); if(a>=1000) return (v<0?'-':'')+'$'+Math.round(a/1000).toLocaleString('pt-BR')+'k'; return fmtUSD(v); }
+function fmtPct(v,d){ if(v==null||!isFinite(v)) return '—'; d=(d==null?1:d); return (v*100).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%'; }
+
+/* ---------- number parsing + grouped (thousand-separator) inputs ---------- */
+// Currency inputs (suffix "$") show grouped (1.500.000). cleanVal() turns the displayed value back
+// into a plain number string for the engine: grouped fields → digits only; rates/percentages →
+// comma-or-dot decimal normalized to a dot.
+function cleanVal(el){
+  var v = String(el.value);
+  if (el.getAttribute && el.getAttribute('data-grp')==='1') return v.replace(/[^\d-]/g,'');
+  return v.replace(',', '.').replace(/[^0-9.\-]/g,'');
+}
+function fmtGroupInput(el){
+  var digits = String(el.value).replace(/[^\d]/g,'');
+  el.value = digits ? Number(digits).toLocaleString('pt-BR') : '';
+}
+// Mark every currency input (suffix "$") as grouped and format its current value.
+function markAmounts(root){
+  root.querySelectorAll('.suffix-wrap').forEach(function(w){
+    var suf=w.querySelector('.suffix'), inp=w.querySelector('input');
+    if (suf && inp && suf.textContent.trim()==='$'){
+      inp.setAttribute('data-grp','1'); inp.setAttribute('type','text'); inp.setAttribute('inputmode','numeric');
+      fmtGroupInput(inp);
+    }
+  });
+}
 
 /* ---------- facility DOM ---------- */
 var facWrap = document.getElementById('facilities');
@@ -682,7 +711,11 @@ var tpl = document.getElementById('facility-tpl');
 
 function readFacility(card){
   var o = {};
-  card.querySelectorAll('[data-x]').forEach(function(el){ o[el.getAttribute('data-x')] = el.value; });
+  card.querySelectorAll('[data-x]').forEach(function(el){
+    var k = el.getAttribute('data-x');
+    if (k==='rateMode') return;
+    o[k] = (k==='name'||k==='type'||k==='rating') ? el.value : cleanVal(el);
+  });
   var modeBtn = card.querySelector('[data-x="rateMode"] button.on');
   o.rateMode = modeBtn ? modeBtn.getAttribute('data-mode') : 'allIn';
   return o;
@@ -720,7 +753,9 @@ function makeFacility(data){
     if (pd!=null){ node.querySelector('[data-x="pd"]').value = pd; node.querySelector('[data-x="lgd"]').value = 40; }
     recompute();
   });
+  markAmounts(node);             // make currency inputs text BEFORE filling (number inputs reject "3.000.000")
   if (data) fillFacility(node, data);
+  markAmounts(node);             // re-group whatever was filled
   return node;
 }
 
@@ -753,13 +788,13 @@ function readAssumptions(){
   var a = {};
   document.querySelectorAll('[data-a]').forEach(function(el){
     var k = el.getAttribute('data-a');
-    a[k] = (el.type==='checkbox') ? el.checked : el.value;
+    a[k] = (el.type==='checkbox') ? el.checked : (k==='opexMethod' ? el.value : cleanVal(el));
   });
   return a;
 }
 function readBucket(attr){
   var o = {};
-  document.querySelectorAll('['+attr+']').forEach(function(el){ o[el.getAttribute(attr)] = el.value; });
+  document.querySelectorAll('['+attr+']').forEach(function(el){ o[el.getAttribute(attr)] = cleanVal(el); });
   return o;
 }
 
@@ -890,44 +925,83 @@ function recompute(){
     : (capLight
         ? 'Capital-light relationship: ' + (dtxt||'—') + '. No risk-weighted credit, so there is no capital base for an ROE — judge it on the ' + fmtUSD(r.npv) + ' NPV and ' + fmtUSD(r.afterTax) + ' after-tax income.'
         : 'Biggest contributors: ' + (dtxt||'—') + '. Expected loss of ' + fmtUSD(r.expectedLoss) + ' and op-ex of ' + fmtUSD(r.opex) + ' net against revenue of ' + fmtUSD(r.revenue) + '.');
+
+  saveState(); // autosave so nothing is lost
 }
 function set(el, txt){ if(el) el.textContent = txt; }
 
-/* ---------- wiring ---------- */
-document.getElementById('addFacility').addEventListener('click', function(){ addFacility(); });
-document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
-document.getElementById('clearBtn').addEventListener('click', function(){
-  if (!confirm('Clear all facilities, deposits and fees? This cannot be undone.')) return;
+/* ---------- persistence (saved in this browser; the entered data survives reloads) ---------- */
+var LS_KEY = 'roe-tool-v1';
+function snapshot(){
+  var s = { a:{}, d:{}, f:{}, fac:[] };
+  document.querySelectorAll('[data-a]').forEach(function(el){ s.a[el.getAttribute('data-a')] = (el.type==='checkbox')?el.checked:el.value; });
+  document.querySelectorAll('[data-d]').forEach(function(el){ s.d[el.getAttribute('data-d')] = el.value; });
+  document.querySelectorAll('[data-f]').forEach(function(el){ s.f[el.getAttribute('data-f')] = el.value; });
+  facWrap.querySelectorAll('.facility').forEach(function(card){
+    var o = {};
+    card.querySelectorAll('[data-x]').forEach(function(el){ if (el.tagName==='DIV') return; o[el.getAttribute('data-x')] = el.value; });
+    var mb = card.querySelector('[data-x="rateMode"] button.on'); o.rateMode = mb ? mb.getAttribute('data-mode') : 'allIn';
+    s.fac.push(o);
+  });
+  return s;
+}
+var saveTimer = null;
+function saveState(){ try { localStorage.setItem(LS_KEY, JSON.stringify(snapshot())); markSaved(); } catch(e){} }
+function markSaved(){
+  var t = document.getElementById('saveHint'); if(!t) return;
+  t.textContent = 'Saved ✓'; t.style.color = 'var(--color-success)';
+  clearTimeout(saveTimer); saveTimer = setTimeout(function(){ t.textContent = 'Auto-saves as you type'; t.style.color = ''; }, 1400);
+}
+function syncOpex(){
+  var m = document.getElementById('opexMethod').value;
+  document.querySelectorAll('[data-opex]').forEach(function(el){ el.style.display = el.getAttribute('data-opex')===m?'':'none'; });
+}
+function restoreState(){
+  var raw; try { raw = localStorage.getItem(LS_KEY); } catch(e){ return false; }
+  if (!raw) return false;
+  var s; try { s = JSON.parse(raw); } catch(e){ return false; }
+  if (!s || !s.fac) return false;
+  markAmounts(document);  // currency inputs → text BEFORE restoring values (number inputs reject grouped text)
+  if (s.a) Object.keys(s.a).forEach(function(k){ var el=document.querySelector('[data-a="'+k+'"]'); if(el){ if(el.type==='checkbox') el.checked=s.a[k]; else el.value=s.a[k]; } });
+  if (s.d) Object.keys(s.d).forEach(function(k){ var el=document.querySelector('[data-d="'+k+'"]'); if(el) el.value=s.d[k]; });
+  if (s.f) Object.keys(s.f).forEach(function(k){ var el=document.querySelector('[data-f="'+k+'"]'); if(el) el.value=s.f[k]; });
+  facWrap.innerHTML='';
+  (s.fac.length ? s.fac : [null]).forEach(function(d){ addFacility(d); });
+  syncOpex(); markAmounts(document); recompute();
+  return true;
+}
+function blankStart(){
+  ['ddaBal','ibBal','ibRate','mmBal','mmRate','cdBal','cdRate','treasuryFees'].forEach(function(k){ var el=document.querySelector('[data-d="'+k+'"]'); if(el) el.value=''; });
+  ['creditUpfrontOneTime','creditRecurring','tm','fx','cards','wire'].forEach(function(k){ var el=document.querySelector('[data-f="'+k+'"]'); if(el) el.value=''; });
   facWrap.innerHTML=''; addFacility();
-  ['ddaBal','ibBal','ibRate','mmBal','mmRate','cdBal','cdRate','treasuryFees'].forEach(function(k){ var el=document.querySelector('[data-d="'+k+'"]'); if(el) el.value=0; });
-  ['creditUpfrontOneTime','creditRecurring','tm','fx','cards','wire'].forEach(function(k){ var el=document.querySelector('[data-f="'+k+'"]'); if(el) el.value=0; });
+  syncOpex(); markAmounts(document); recompute();
+}
+
+/* ---------- wiring ---------- */
+document.getElementById('addFacility').addEventListener('click', function(){ addFacility(); recompute(); });
+document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+document.getElementById('saveBtn').addEventListener('click', function(){ saveState(); });
+document.getElementById('clearBtn').addEventListener('click', function(){
+  if (!confirm('Clear everything you have entered? This cannot be undone.')) return;
+  try { localStorage.removeItem(LS_KEY); } catch(e){}
+  blankStart();
+});
+document.getElementById('opexMethod').addEventListener('change', function(){ syncOpex(); recompute(); });
+// recompute (and autosave) on any input; group currency fields as they're typed
+document.addEventListener('input', function(e){
+  if (!e.target.closest || !e.target.closest('.wrap')) return;
+  if (e.target.getAttribute && e.target.getAttribute('data-grp')==='1') fmtGroupInput(e.target);
   recompute();
 });
-document.getElementById('exampleBtn').addEventListener('click', function(){
-  if (!confirm('Replace everything with the built-in example? Your entered data will be lost.')) return;
-  loadExample();
-});
-document.getElementById('opexMethod').addEventListener('change', function(e){
-  document.querySelectorAll('[data-opex]').forEach(function(el){ el.style.display = el.getAttribute('data-opex')===e.target.value?'':'none'; });
-  recompute();
-});
-// recompute on any input
-document.addEventListener('input', function(e){ if (e.target.closest('.wrap')) recompute(); });
-document.addEventListener('change', function(e){ if (e.target.closest('.wrap')) recompute(); });
+document.addEventListener('change', function(e){ if (e.target.closest && e.target.closest('.wrap')) recompute(); });
 // Esc dismisses an open tooltip (it shows on focus, including a tap on touch).
 document.addEventListener('keydown', function(e){
   if (e.key==='Escape' && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('info')) document.activeElement.blur();
 });
 
-function loadExample(){
-  facWrap.innerHTML=''; EXAMPLE.forEach(function(d){ addFacility(d); }); recompute();
-}
-
 /* ---------- init ---------- */
-// autocomplete=off stops browsers from restoring stale field values on reload (which desynced the
-// pricing toggle). Back/forward (bfcache) restores the user's real state intact — we don't wipe it.
 document.querySelectorAll('input,select').forEach(function(e){ e.setAttribute('autocomplete','off'); });
-loadExample();
+if (!restoreState()) blankStart();
 </script>
 </body>
 </html>
