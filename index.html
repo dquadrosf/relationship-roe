@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relationship Profitability — ROE &amp; RAROC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-brand:#0055ff; --color-brand-dark:#0040cc;
+    --color-brand-accent:#eef1ff; --color-brand-accent-soft:#a3b8ff;
+    --color-ink:#0e121b; --color-ink-soft:#686e7a;
+    --color-surface:#ffffff; --color-surface-muted:#fbfaf6; --color-border:#dee0e5;
+    --color-success:#36a875; --color-warning:#d9831f; --color-danger:#d92e2e;
+    --font-space:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-instrument:'Instrument Serif', Georgia, serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--color-surface-muted); color:var(--color-ink);
+    font-family:var(--font-space); font-size:14px; line-height:1.5;
+    letter-spacing:-0.02em; font-feature-settings:"ss01";
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:768px; margin:0 auto; padding:24px 16px 96px;}
+  @media (min-width:640px){ .wrap{padding:32px 24px 96px;} }
+
+  h1{font-size:30px; font-weight:700; letter-spacing:-0.04em; line-height:1.02; margin:0;}
+  h2{font-size:18px; font-weight:600; margin:0; letter-spacing:-0.03em;}
+  h3{font-size:14px; font-weight:600; margin:0;}
+  .accent{font-family:var(--font-instrument); font-style:italic; color:var(--color-brand); font-weight:400;}
+  .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--color-ink-soft); font-weight:600;}
+  .meta{font-size:11px; color:var(--color-ink-soft);}
+  .muted{color:var(--color-ink-soft);}
+  p{margin:0;}
+
+  /* layout */
+  .stack{display:flex; flex-direction:column; gap:24px;}
+  .card{border:1px solid var(--color-border); background:var(--color-surface); border-radius:16px; padding:20px;}
+  .card.tight{padding:16px; border-radius:16px;}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media (min-width:560px){ .grid2{grid-template-columns:1fr 1fr;} }
+  .grid3{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media (min-width:560px){ .grid3{grid-template-columns:1fr 1fr 1fr;} }
+  .field{display:flex; flex-direction:column; gap:4px;}
+  .sectionhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:12px;}
+
+  /* labels + tooltip */
+  .lbl{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:500; color:var(--color-ink);}
+  .info{position:relative; display:inline-flex; align-items:center; justify-content:center;
+        width:15px; height:15px; padding:0; border:none; background:transparent; color:var(--color-ink-soft); cursor:help;}
+  .info svg{width:14px; height:14px;}
+  .info:hover, .info:focus{color:var(--color-brand); outline:none;}
+  .bubble{display:none; position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
+          width:240px; max-width:72vw; z-index:30; text-align:left;
+          background:var(--color-surface); color:var(--color-ink); border:1px solid var(--color-border);
+          border-radius:10px; padding:10px 12px; font-size:12px; font-weight:400; line-height:1.45;
+          letter-spacing:-0.01em; box-shadow:0 8px 28px rgba(14,18,27,0.14);}
+  .bubble::after{content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%);
+          border:6px solid transparent; border-top-color:var(--color-surface);}
+  .info:hover .bubble, .info:focus .bubble{display:block;}
+
+  /* inputs — blue = you fill in */
+  input, select{font-family:var(--font-space); font-size:14px; color:var(--color-ink);
+    background:#fdfdff; border:1px solid var(--color-border); border-radius:8px; padding:8px 10px; width:100%;
+    letter-spacing:-0.01em; transition:border-color .12s, box-shadow .12s;}
+  input:hover, select:hover{border-color:var(--color-brand-accent-soft);}
+  input:focus, select:focus{outline:none; border-color:var(--color-brand); box-shadow:0 0 0 3px var(--color-brand-accent);}
+  input.in-blue{background:var(--color-brand-accent); border-color:#cdd6ff;}
+  input.in-blue:focus{background:#fff;}
+  .suffix-wrap{position:relative;}
+  .suffix-wrap .suffix{position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--color-ink-soft); pointer-events:none;}
+  .suffix-wrap input{padding-right:26px;}
+
+  /* buttons */
+  .btn{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-space); font-size:14px; font-weight:500;
+       border-radius:8px; padding:8px 14px; cursor:pointer; border:1px solid transparent; transition:opacity .12s, border-color .12s, background .12s;}
+  .btn-primary{background:var(--color-brand); color:#fff;}
+  .btn-primary:hover{background:var(--color-brand-dark);}
+  .btn-ghost{background:var(--color-surface); border-color:var(--color-border); color:var(--color-ink);}
+  .btn-ghost:hover{border-color:color-mix(in srgb, var(--color-brand) 50%, transparent);}
+  .btn-sm{font-size:12px; padding:6px 10px;}
+  .icon-btn{background:transparent; border:none; color:var(--color-ink-soft); cursor:pointer; padding:6px; border-radius:8px; display:inline-flex;}
+  .icon-btn:hover{color:var(--color-danger); background:#fbecec;}
+  .btn svg, .icon-btn svg{width:16px; height:16px;}
+
+  /* chips */
+  .chip{display:inline-flex; align-items:center; gap:4px; background:var(--color-brand-accent); color:var(--color-brand);
+        border-radius:999px; padding:3px 9px; font-size:10px; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+
+  /* results band */
+  .results{position:sticky; top:0; z-index:20; background:var(--color-surface-muted); padding-top:8px; margin:-8px -2px 0; }
+  .results-inner{border:1px solid var(--color-border); background:var(--color-surface); border-radius:16px; padding:14px 16px;
+        display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+  @media (min-width:640px){ .results-inner{grid-template-columns:repeat(4,1fr);} }
+  .kpi .eyebrow{display:block; margin-bottom:2px;}
+  .kpi .val{font-size:24px; font-weight:700; letter-spacing:-0.04em; line-height:1;}
+  .kpi .sub{font-size:11px; color:var(--color-ink-soft); margin-top:2px;}
+  .verdict{display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:600; border-radius:999px; padding:4px 10px;}
+  .verdict.good{background:#e7f6ef; color:var(--color-success);}
+  .verdict.bad{background:#fbe9e9; color:var(--color-danger);}
+  .verdict.note{background:var(--color-brand-accent); color:var(--color-brand);}
+  .verdict svg{width:14px; height:14px;}
+
+  /* facility */
+  .facility{border:1px solid var(--color-border); border-radius:16px; padding:16px; background:#fff;}
+  .facility + .facility{margin-top:14px;}
+  .fac-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px;}
+  .fac-strip{margin-top:12px; padding-top:12px; border-top:1px dashed var(--color-border);
+        display:grid; grid-template-columns:repeat(2,1fr); gap:8px 16px;}
+  @media (min-width:560px){ .fac-strip{grid-template-columns:repeat(3,1fr);} }
+  .stat{font-size:12px;}
+  .stat b{display:block; font-size:13px; font-weight:600; letter-spacing:-0.02em;}
+  .stat span{color:var(--color-ink-soft);}
+  .warn{display:none; margin-top:10px; font-size:12px; color:var(--color-warning); align-items:flex-start; gap:6px;}
+  .warn.show{display:flex;}
+  .warn svg{width:14px; height:14px; flex:none; margin-top:1px;}
+
+  .toggle{display:inline-flex; border:1px solid var(--color-border); border-radius:8px; overflow:hidden;}
+  .toggle button{border:none; background:#fff; font-size:12px; padding:7px 10px; cursor:pointer; color:var(--color-ink-soft); font-family:var(--font-space);}
+  .toggle button.on{background:var(--color-brand-accent); color:var(--color-brand); font-weight:600;}
+
+  /* summary */
+  .sumtable{width:100%; border-collapse:collapse; font-size:13px;}
+  .sumtable td{padding:6px 0; border-bottom:1px solid var(--color-border);}
+  .sumtable td:last-child{text-align:right; font-variant-numeric:tabular-nums; font-weight:500;}
+  .sumtable tr.total td{font-weight:700; border-bottom:2px solid var(--color-ink);}
+  .sumtable tr.sub td{color:var(--color-ink-soft); font-size:12px;}
+  .ftable{width:100%; border-collapse:collapse; font-size:12px; margin-top:6px;}
+  .ftable th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-ink-soft); font-weight:600; padding:6px 8px 6px 0; border-bottom:1px solid var(--color-border);}
+  .ftable td{padding:7px 8px 7px 0; border-bottom:1px solid var(--color-border); font-variant-numeric:tabular-nums;}
+  .ftable th.r, .ftable td.r{text-align:right;}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:11px; color:var(--color-ink-soft); margin-top:4px;}
+  .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+  .swatch-blue{background:var(--color-brand-accent); border:1px solid #cdd6ff;}
+  .swatch-grey{background:#f1f1f3; border:1px solid var(--color-border);}
+
+  details.assumptions summary{cursor:pointer; list-style:none; display:flex; align-items:center; justify-content:space-between;}
+  details.assumptions summary::-webkit-details-marker{display:none;}
+  details.assumptions[open] .chev{transform:rotate(90deg);}
+  .chev{transition:transform .15s; color:var(--color-ink-soft);}
+
+  footer{margin-top:32px; padding-top:20px; border-top:1px solid var(--color-border); font-size:12px; color:var(--color-ink-soft);}
+  footer p + p{margin-top:8px;}
+  .footbrand{font-weight:600; color:var(--color-ink);}
+
+  @media print{
+    .no-print{display:none !important;}
+    .screen{display:none !important;}
+    body{background:#fff;}
+    .wrap{max-width:none; padding:0;}
+    .card{border:1px solid #ccc; break-inside:avoid;}
+    .results{position:static;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="row" style="margin-bottom:20px; align-items:flex-start;">
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px;">Corporate Banking</div>
+      <h1>Relationship <span class="accent">Profitability</span></h1>
+      <p class="muted" style="margin-top:6px;">Roll a full client relationship — facilities, deposits &amp; fees — into one ROE &amp; RAROC for the credit package.</p>
+    </div>
+  </header>
+
+  <!-- LIVE RESULTS -->
+  <div class="results no-print">
+    <div class="results-inner">
+      <div class="kpi"><span class="eyebrow">Relationship ROE</span><div class="val" id="k-roe">—</div><div class="sub" id="k-roe-sub">after-tax ÷ allocated capital</div></div>
+      <div class="kpi"><span class="eyebrow">RAROC</span><div class="val" id="k-raroc">—</div><div class="sub" id="k-raroc-sub">pre-tax ÷ economic capital</div></div>
+      <div class="kpi"><span class="eyebrow">NPV (life)</span><div class="val" id="k-npv">—</div><div class="sub" id="k-npv-sub">today's $</div></div>
+      <div class="kpi"><span class="eyebrow">Verdict</span><div style="margin-top:4px;"><span class="verdict" id="k-verdict">—</span></div><div class="sub" id="k-verdict-sub"></div></div>
+    </div>
+    <p class="meta" style="margin-top:8px; text-align:center;">Illustrative defaults — confirm tax, capital ratio, hurdle and risk inputs against the bank's own figures before any real credit decision.</p>
+  </div>
+
+  <div class="stack" style="margin-top:24px;">
+
+    <!-- INSTRUCTIONS -->
+    <div class="card tight screen" style="background:var(--color-brand-accent); border-color:#cdd6ff;">
+      <div class="row" style="align-items:flex-start; gap:10px;">
+        <span style="color:var(--color-brand); flex:none;">{{SPARKLES}}</span>
+        <div>
+          <h3 style="color:var(--color-brand-dark);">How to use this</h3>
+          <p class="muted" style="margin-top:4px;">Fill the <b style="color:var(--color-brand-dark)">blue fields</b>. Everything grey is calculated for you. Hover the <b>ⓘ</b> on any label to see what it means. Add as many facilities as the relationship has, then read the ROE up top or print the summary at the bottom. The page opens with an example you can overwrite.</p>
+          <div class="legend"><span><i class="swatch-blue"></i>You fill in</span><span><i class="swatch-grey"></i>Calculated</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASSUMPTIONS -->
+    <details class="card assumptions screen" id="assumptions">
+      <summary>
+        <div><div class="eyebrow">Global</div><h2>Assumptions <span class="muted" style="font-weight:400; font-size:13px;">— set once, used everywhere</span></h2></div>
+        <span class="chev">{{CHEVRON}}</span>
+      </summary>
+      <div style="margin-top:16px;" class="stack">
+        <div class="grid3">
+          <div class="field">
+            <span class="lbl">Tax rate {{TIP:Marginal tax rate applied to pre-tax income to get after-tax net income. A placeholder — use the bank's effective rate.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="taxRate" type="number" step="0.5" value="25"><span class="suffix">%</span></div>
+          </div>
+          <div class="field">
+            <span class="lbl">Target capital ratio {{TIP:Equity the bank holds per dollar of risk-weighted assets. Allocated capital = RWA × this ratio. Common range 8–12%.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="targetCapRatio" type="number" step="0.5" value="10"><span class="suffix">%</span></div>
+          </div>
+          <div class="field">
+            <span class="lbl">Hurdle / cost of equity {{TIP:The minimum ROE the bank demands. Results above it create value (green); below, destroy it (red).}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="hurdle" type="number" step="0.5" value="12"><span class="suffix">%</span></div>
+          </div>
+          <div class="field">
+            <span class="lbl">FTP funding rate {{TIP:The bank's internal cost of funds charged against loans (matched to the facility). Loan value = customer rate − this. Ideally a curve by tenor; here it's one rate.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="ftpFunding" type="number" step="0.05" value="4.00"><span class="suffix">%</span></div>
+          </div>
+          <div class="field">
+            <span class="lbl">FTP credit rate {{TIP:The internal 'thank-you' rate credited to deposits for funding the bank would otherwise buy in the market. Deposit value = this − rate you pay the customer.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="ftpCredit" type="number" step="0.05" value="4.50"><span class="suffix">%</span></div>
+          </div>
+          <div class="field">
+            <span class="lbl">Discount rate (NPV) {{TIP:Rate used to bring future years' cash flows to today for the NPV. Usually equals the hurdle / cost of capital.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="discountRate" type="number" step="0.5" value="12"><span class="suffix">%</span></div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <span class="lbl">Operating-expense method {{TIP:How operating cost is charged to the relationship — a % of total revenue, a fixed amount per facility, or a fixed amount for the whole relationship.}}</span>
+            <select class="in-blue" data-a="opexMethod" id="opexMethod">
+              <option value="pctRevenue">% of revenue</option>
+              <option value="perFacility">Fixed $ per facility</option>
+              <option value="perRelationship">Fixed $ per relationship</option>
+            </select>
+          </div>
+          <div class="field" data-opex="pctRevenue">
+            <span class="lbl">Op-ex as % of revenue {{TIP:Operating cost as a share of total relationship revenue (NII + fees). 25–40% is typical for middle-market.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="opexPct" type="number" step="1" value="30"><span class="suffix">%</span></div>
+          </div>
+          <div class="field" data-opex="perFacility" style="display:none;">
+            <span class="lbl">Op-ex $ per facility {{TIP:Fixed annual cost charged for each facility on the relationship.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="opexPerFacility" type="number" step="500" value="5000"><span class="suffix">$</span></div>
+          </div>
+          <div class="field" data-opex="perRelationship" style="display:none;">
+            <span class="lbl">Op-ex $ per relationship {{TIP:Single fixed annual cost for servicing the whole relationship, regardless of facility count.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="opexPerRelationship" type="number" step="1000" value="20000"><span class="suffix">$</span></div>
+          </div>
+          <div class="field">
+            <span class="lbl">Economic capital (optional) {{TIP:Risk-model capital used for RAROC. Leave blank to use the regulatory allocated capital (RWA × target ratio). Fill only if the bank has its own economic-capital number.}}</span>
+            <div class="suffix-wrap"><input class="in-blue" data-a="econCapital" type="number" step="1000" placeholder="(uses allocated capital)"><span class="suffix">$</span></div>
+          </div>
+        </div>
+        <label class="row" style="justify-content:flex-start; gap:8px; cursor:pointer; font-size:12px;">
+          <input type="checkbox" data-a="useGrid" id="useGrid" style="width:auto;">
+          <span class="lbl" style="font-weight:400;">Auto-fill PD/LGD from an <b>illustrative</b> risk-rating grid {{TIP:When on, choosing an internal rating fills placeholder PD and LGD. These are ILLUSTRATIVE only — replace with the bank's own master scale before relying on them. Off by default so you enter real numbers.}}</span>
+        </label>
+        <p class="meta" style="margin-top:4px;">Risk weight and credit-conversion factor (CCF) default by facility type (e.g. 100% risk weight, 50% CCF on undrawn commitments and letters of credit) and are editable per facility. Confirm them against the bank's capital rules.</p>
+      </div>
+    </details>
+
+    <!-- FACILITIES -->
+    <section class="screen">
+      <div class="sectionhead">
+        <div><div class="eyebrow">Credit</div><h2>Facilities</h2></div>
+        <button class="btn btn-primary btn-sm no-print" id="addFacility">{{PLUS}} Add facility</button>
+      </div>
+      <div id="facilities"></div>
+    </section>
+
+    <!-- DEPOSITS -->
+    <section class="card screen">
+      <div class="sectionhead"><div><div class="eyebrow">Funding</div><h2>Deposits</h2></div></div>
+      <div class="grid2">
+        <div class="field"><span class="lbl">DDA / non-interest balance {{TIP:Checking-type deposits that pay no interest. The most valuable funding — you earn the full FTP credit and pay nothing.}}</span><div class="suffix-wrap"><input class="in-blue" data-d="ddaBal" type="number" value="1500000"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">Treasury / deposit fees (annual) {{TIP:Recurring cash-management and deposit-analysis fees earned on the relationship each year.}}</span><div class="suffix-wrap"><input class="in-blue" data-d="treasuryFees" type="number" value="6000"><span class="suffix">$</span></div></div>
+      </div>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="field"><span class="lbl">Interest-bearing balance {{TIP:Everyday interest-bearing deposit balances (NOW/savings).}}</span><div class="suffix-wrap"><input class="in-blue" data-d="ibBal" type="number" value="500000"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">…rate paid {{TIP:The interest rate you pay the customer on these balances.}}</span><div class="suffix-wrap"><input class="in-blue" data-d="ibRate" type="number" step="0.05" value="1.50"><span class="suffix">%</span></div></div>
+        <div class="field"><span class="lbl">Money-market balance {{TIP:Money-market deposit account (MMDA) balances.}}</span><div class="suffix-wrap"><input class="in-blue" data-d="mmBal" type="number" value="0"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">…rate paid {{TIP:The rate you pay on money-market balances.}}</span><div class="suffix-wrap"><input class="in-blue" data-d="mmRate" type="number" step="0.05" value="0"><span class="suffix">%</span></div></div>
+        <div class="field"><span class="lbl">CD / time-deposit balance {{TIP:Certificate-of-deposit / time-deposit balances.}}</span><div class="suffix-wrap"><input class="in-blue" data-d="cdBal" type="number" value="0"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">…rate paid {{TIP:The rate you pay on CD / time deposits.}}</span><div class="suffix-wrap"><input class="in-blue" data-d="cdRate" type="number" step="0.05" value="0"><span class="suffix">%</span></div></div>
+      </div>
+      <div class="fac-strip" style="border-top-style:solid;">
+        <div class="stat"><span>Total deposits</span><b id="d-total">—</b></div>
+        <div class="stat"><span>Deposit value (annual)</span><b id="d-value">—</b></div>
+        <div class="stat"><span>Avg credit spread</span><b id="d-spread">—</b></div>
+      </div>
+    </section>
+
+    <!-- FEES -->
+    <section class="card screen">
+      <div class="sectionhead"><div><div class="eyebrow">Ancillary</div><h2>Fee income</h2></div></div>
+      <div class="grid2">
+        <div class="field"><span class="lbl">Credit fees — upfront, one-time {{TIP:One-time origination/structuring fees beyond the per-facility upfront fee. Spread over the relationship life for the annual ROE; taken in full at year 0 for NPV. Don't double-count facility upfront fees here.}}</span><div class="suffix-wrap"><input class="in-blue" data-f="creditUpfrontOneTime" type="number" value="0"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">Credit fees — recurring (annual) {{TIP:Commitment, LC, amendment and waiver fees that recur each year.}}</span><div class="suffix-wrap"><input class="in-blue" data-f="creditRecurring" type="number" value="4000"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">Treasury management (annual) {{TIP:Recurring treasury / cash-management revenue (separate from deposit-analysis fees above if you track them apart).}}</span><div class="suffix-wrap"><input class="in-blue" data-f="tm" type="number" value="18000"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">FX revenue (annual) {{TIP:Expected annual foreign-exchange spread revenue from this client.}}</span><div class="suffix-wrap"><input class="in-blue" data-f="fx" type="number" value="0"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">Card / merchant (annual) {{TIP:Expected annual card and merchant-services income.}}</span><div class="suffix-wrap"><input class="in-blue" data-f="cards" type="number" value="0"><span class="suffix">$</span></div></div>
+        <div class="field"><span class="lbl">Wire / other (annual) {{TIP:Wire fees and any other recurring non-credit revenue.}}</span><div class="suffix-wrap"><input class="in-blue" data-f="wire" type="number" value="0"><span class="suffix">$</span></div></div>
+      </div>
+    </section>
+
+    <!-- OUTPUT SUMMARY -->
+    <section class="card summary" id="summary">
+      <div class="sectionhead">
+        <div><div class="eyebrow">For the credit package</div><h2>Output summary</h2></div>
+        <button class="btn btn-ghost btn-sm no-print" id="printBtn">{{PRINTER}} Print / Save PDF</button>
+      </div>
+
+      <div class="results-inner" style="margin-bottom:10px;">
+        <div class="kpi"><span class="eyebrow">Relationship ROE</span><div class="val" id="s-roe">—</div></div>
+        <div class="kpi"><span class="eyebrow">RAROC</span><div class="val" id="s-raroc">—</div></div>
+        <div class="kpi"><span class="eyebrow">NPV (life)</span><div class="val" id="s-npv">—</div></div>
+        <div class="kpi"><span class="eyebrow">Allocated capital</span><div class="val" id="s-cap">—</div></div>
+        <div class="kpi"><span class="eyebrow">Verdict vs hurdle</span><div style="margin-top:4px;"><span class="verdict" id="s-verdict">—</span></div></div>
+      </div>
+      <p class="meta" style="margin-bottom:18px;">Illustrative defaults — confirm the tax rate, capital ratio, hurdle and risk parameters against the bank's own figures before using this in a credit decision.</p>
+
+      <div class="grid2" style="gap:24px;">
+        <div>
+          <div class="eyebrow" style="margin-bottom:8px;">Income build (annual)</div>
+          <table class="sumtable">
+            <tr><td>Net interest income</td><td id="b-nii">—</td></tr>
+            <tr class="sub"><td>· loan spread income</td><td id="b-spread">—</td></tr>
+            <tr class="sub"><td>· deposit value</td><td id="b-depval">—</td></tr>
+            <tr><td>Fee income</td><td id="b-fees">—</td></tr>
+            <tr><td>Operating expense</td><td id="b-opex">—</td></tr>
+            <tr><td>Expected loss</td><td id="b-el">—</td></tr>
+            <tr class="total"><td>Pre-tax income</td><td id="b-pretax">—</td></tr>
+            <tr><td>Tax</td><td id="b-tax">—</td></tr>
+            <tr class="total"><td>After-tax net income</td><td id="b-aftertax">—</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:8px;">Capital &amp; return</div>
+          <table class="sumtable">
+            <tr><td>Risk-weighted assets</td><td id="b-rwa">—</td></tr>
+            <tr><td>Target capital ratio</td><td id="b-capratio">—</td></tr>
+            <tr class="total"><td>Allocated capital</td><td id="b-cap">—</td></tr>
+            <tr><td>Economic capital (RAROC)</td><td id="b-econcap">—</td></tr>
+            <tr class="total"><td>Relationship ROE</td><td id="b-roe">—</td></tr>
+            <tr class="sub"><td>· relationship-life ROE</td><td id="b-liferoe">—</td></tr>
+            <tr><td>RAROC (pre-tax)</td><td id="b-raroc">—</td></tr>
+            <tr><td>Hurdle</td><td id="b-hurdle">—</td></tr>
+            <tr><td>Economic profit (EVA)</td><td id="b-eva">—</td></tr>
+            <tr class="total"><td>NPV over life</td><td id="b-npv">—</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;">
+        <div class="eyebrow" style="margin-bottom:6px;">Facility-by-facility</div>
+        <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table class="ftable">
+          <thead><tr>
+            <th>Facility</th><th>Type</th><th class="r">Committed</th><th class="r">Avg o/s</th>
+            <th class="r">All-in</th><th class="r">RWA</th><th class="r">Exp. loss</th><th class="r">Credit ROE</th>
+          </tr></thead>
+          <tbody id="ftbody"></tbody>
+        </table>
+        </div>
+      </div>
+
+      <p id="drivers" class="muted" style="margin-top:16px; font-size:12px;"></p>
+    </section>
+
+    <div class="no-print" style="display:flex; gap:10px;">
+      <button class="btn btn-ghost btn-sm" id="clearBtn">Clear all</button>
+      <button class="btn btn-ghost btn-sm" id="exampleBtn">Reload example</button>
+    </div>
+
+    <footer>
+      <p><b class="footbrand">Methodology a credit officer can cite.</b> Relationship ROE is after-tax profit measured against the equity capital the bank must hold for the relationship's risk. Net interest income is the spread between each asset's yield and its matched funding cost (FTP), plus the spread between the FTP credit on the client's deposits and the rate paid to them. We add fee income (upfront fees amortized over the facility life; recurring fees taken annually), subtract allocated operating expense and expected loss (PD × LGD × EAD, with credit-conversion factors on unfunded commitments and letters of credit), and apply the tax rate. Capital is allocated as risk-weighted assets × target capital ratio. <b>ROE = after-tax net income ÷ allocated capital</b>; <b>RAROC</b> expresses the pre-tax risk-adjusted return over economic capital; both are compared to the cost-of-equity hurdle. NPV discounts the relationship's after-tax cash flows over its life, recognizing upfront fees at year 0.</p>
+      <p><b style="color:var(--color-warning)">Not official numbers.</b> Defaults (tax rate, capital ratio, hurdle, risk weights, the optional PD/LGD grid) are illustrative placeholders. Replace them with the bank's own policy figures before this goes into a real credit decision.</p>
+    </footer>
+
+  </div>
+</div>
+
+<!-- FACILITY TEMPLATE -->
+<template id="facility-tpl">
+  <div class="facility">
+    <div class="fac-head">
+      <h3 class="fac-title">Facility</h3>
+      <button class="icon-btn no-print fac-remove" title="Remove facility" aria-label="Remove facility">{{TRASH}}</button>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <span class="lbl">Facility name / borrower {{TIP:A label so you can tell facilities apart on the summary, e.g. 'ABC Co — Term Loan A'.}}</span>
+        <input class="in-blue" data-x="name" type="text" placeholder="e.g. Term Loan A">
+      </div>
+      <div class="field">
+        <span class="lbl">Facility type {{TIP:What kind of credit this is. Sets default risk weight and credit-conversion factor (you can override both below). Letters of credit and undrawn commitments are sized by their CCF.}}</span>
+        <select class="in-blue" data-x="type">
+          <option value="term">Term Loan</option>
+          <option value="revolver">Revolver / Line of Credit</option>
+          <option value="cre">CRE (investor real estate)</option>
+          <option value="oore">Owner-Occupied RE</option>
+          <option value="ci">Equipment / C&amp;I</option>
+          <option value="lc">Letter of Credit</option>
+          <option value="bridge">Bridge</option>
+          <option value="construction">Construction</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="lbl">Committed amount {{TIP:The most the bank has agreed to expose — the full facility size, drawn or not. For a letter of credit, this is the notional/face amount.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="committed" type="number" value="0"><span class="suffix">$</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Expected avg outstanding {{TIP:How much you realistically expect to be drawn on average over a year. For a term loan, usually equals committed. Leave at 0 for a letter of credit.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="avgOut" type="number" value="0"><span class="suffix">$</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Utilization % (optional) {{TIP:Average share of the commitment actually drawn. If you enter a value above 0, it overrides the dollar amount above (avg outstanding = committed × utilization).}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="util" type="number" step="5" value=""><span class="suffix">%</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Expected life / tenor {{TIP:How long the facility lasts, in years. Used to amortize upfront fees and to set the NPV horizon.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="life" type="number" step="0.5" value="5"><span class="suffix">yrs</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Pricing {{TIP:Enter the full rate the customer pays (All-in), or just the spread you add over the bank's FTP funding rate. Either way the loan's value is the rate minus the funding cost.}}</span>
+        <div class="toggle" data-x="rateMode">
+          <button type="button" data-mode="allIn" class="on">All-in rate</button>
+          <button type="button" data-mode="spread">Spread over FTP</button>
+        </div>
+      </div>
+      <div class="field mode-allIn">
+        <span class="lbl">All-in rate {{TIP:The full interest rate the customer pays on drawn balances.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="allInRate" type="number" step="0.05" value="7.00"><span class="suffix">%</span></div>
+      </div>
+      <div class="field mode-spread" style="display:none;">
+        <span class="lbl">Spread over FTP {{TIP:The margin added on top of the bank's FTP funding rate. Customer rate = FTP funding + this spread.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="spread" type="number" step="0.05" value="2.50"><span class="suffix">%</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Upfront / origination fee {{TIP:One-time fee charged at closing. Spread over the facility life for annual ROE; taken in full at year 0 for NPV.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="upfrontFee" type="number" value="0"><span class="suffix">$</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Unused / commitment fee {{TIP:Annual fee on the undrawn part of a commitment (e.g. 0.25% on the unused revolver). Pays the bank for holding capital against money it may still lend.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="unusedFeePct" type="number" step="0.05" value="0"><span class="suffix">%</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Internal risk rating {{TIP:The bank's grade for this borrower. If the PD/LGD auto-fill is on (in Assumptions), picking a grade fills illustrative PD and LGD.}}</span>
+        <select class="in-blue" data-x="rating">
+          <option value="">—</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="lbl">PD — probability of default {{TIP:Chance this borrower defaults within a year, as a %. From the internal risk rating. Drives expected loss.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="pd" type="number" step="0.01" value="0.30"><span class="suffix">%</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">LGD — loss given default {{TIP:If they default, the % you'd actually lose after collateral and recoveries. ~40% is a common unsecured assumption.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="lgd" type="number" step="1" value="40"><span class="suffix">%</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Risk weight {{TIP:Regulatory % applied to exposure to size capital (e.g. 100% standard C&I; CRE/HVCRE may be 150%). Higher weight → more capital → lower ROE. Auto-fills from facility type; override as needed.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="riskWeight" type="number" step="5" value="100"><span class="suffix">%</span></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Credit conversion factor {{TIP:For the undrawn / off-balance-sheet portion (undrawn commitment or LC), the % treated as exposure for capital and expected loss. Auto-fills from facility type.}}</span>
+        <div class="suffix-wrap"><input class="in-blue" data-x="ccf" type="number" step="5" value="0"><span class="suffix">%</span></div>
+      </div>
+    </div>
+    <div class="fac-strip">
+      <div class="stat"><span>Avg outstanding</span><b data-o="avgOut">—</b></div>
+      <div class="stat"><span>EAD</span><b data-o="ead">—</b></div>
+      <div class="stat"><span>RWA</span><b data-o="rwa">—</b></div>
+      <div class="stat"><span>Expected loss</span><b data-o="el">—</b></div>
+      <div class="stat"><span>Spread income</span><b data-o="spread">—</b></div>
+      <div class="stat"><span>Credit-only ROE {{TIP:This facility's ROE on its credit alone — before deposit value, ancillary fees, and operating expense. The Relationship ROE up top folds those in, so it is usually higher.}}</span><b data-o="roe">—</b></div>
+    </div>
+    <div class="warn"><span>{{ALERT}}</span><span data-o="warn"></span></div>
+  </div>
+</template>
+
+<script>
+// ===ENGINE-START===
+// Pure, DOM-free profitability engine. (Also unit-tested from disk by engine.test.cjs.)
+function num(v){ if(v===''||v===null||v===undefined) return 0; var n = (typeof v==='number')?v:parseFloat(String(v).replace(/[,$\s%]/g,'')); return isFinite(n)?n:0; }
+function pct(v){ return num(v)/100; }
+function maxLife(fac){ return fac.reduce(function(m,x){ return Math.max(m, x.life||0); }, 0); }
+
+function computeFacility(f, a){
+  var committed = num(f.committed);
+  var util = pct(f.util);
+  var avgOut = util > 0 ? committed * util : num(f.avgOut);
+  var undrawn = Math.max(committed - avgOut, 0);
+  var ftpFunding = pct(a.ftpFunding);
+  var assetRate = (f.rateMode === 'spread') ? (ftpFunding + pct(f.spread)) : pct(f.allInRate);
+  var spreadIncome = (assetRate - ftpFunding) * avgOut;
+  var unusedIncome = pct(f.unusedFeePct) * undrawn;
+  var life = Math.max(num(f.life), 0);
+  var upfrontFee = num(f.upfrontFee);
+  var upfrontAnnualized = life > 0 ? upfrontFee / life : upfrontFee;
+  var ccf = pct(f.ccf);
+  var ead = avgOut + ccf * undrawn;
+  var expectedLoss = pct(f.pd) * pct(f.lgd) * ead;
+  var rwa = ead * pct(f.riskWeight);
+  return { name:f.name, type:f.type, committed:committed, avgOut:avgOut, undrawn:undrawn,
+           assetRate:assetRate, spreadIncome:spreadIncome, unusedIncome:unusedIncome,
+           upfrontFee:upfrontFee, upfrontAnnualized:upfrontAnnualized, ead:ead,
+           expectedLoss:expectedLoss, rwa:rwa, life:life };
+}
+
+function computeDeposits(d, a){
+  var credit = pct(a.ftpCredit);
+  var items = [
+    { bal:num(d.ddaBal), rate:0 },
+    { bal:num(d.ibBal),  rate:pct(d.ibRate) },
+    { bal:num(d.mmBal),  rate:pct(d.mmRate) },
+    { bal:num(d.cdBal),  rate:pct(d.cdRate) }
+  ];
+  var value=0, total=0;
+  for (var i=0;i<items.length;i++){ value += (credit - items[i].rate) * items[i].bal; total += items[i].bal; }
+  return { value:value, total:total, treasuryFees:num(d.treasuryFees), avgSpread: total>0 ? value/total : 0 };
+}
+
+function rollup(facilities, deposits, fees, a){
+  var fac = facilities.map(function(f){ return computeFacility(f, a); });
+  var dep = computeDeposits(deposits, a);
+  var ml = Math.max(maxLife(fac), 1);
+
+  var assetSpread = fac.reduce(function(s,x){ return s + x.spreadIncome; }, 0);
+  var nii = assetSpread + dep.value;
+
+  var unusedTotal = fac.reduce(function(s,x){ return s + x.unusedIncome; }, 0);
+  var facUpfrontAnnualized = fac.reduce(function(s,x){ return s + x.upfrontAnnualized; }, 0);
+  var extraUpfrontAnnualized = num(fees.creditUpfrontOneTime) / ml;
+  var upfrontAnnualizedTotal = facUpfrontAnnualized + extraUpfrontAnnualized;
+  var upfrontTotalAbs = fac.reduce(function(s,x){ return s + x.upfrontFee; }, 0) + num(fees.creditUpfrontOneTime);
+  var recurringFees = num(fees.creditRecurring) + num(fees.tm) + num(fees.fx) + num(fees.cards) + num(fees.wire) + dep.treasuryFees;
+  var totalFees = unusedTotal + upfrontAnnualizedTotal + recurringFees;
+
+  var revenue = nii + totalFees;
+  var facilityCount = facilities.length;
+  // Op-ex is charged on RECURRING revenue only (NII + unused + recurring fees). A one-time/upfront
+  // fee is an origination event, not a source of annual servicing cost, so it does not attract op-ex
+  // here — this also keeps the annual ROE and the NPV on the same op-ex basis.
+  var opexBase = nii + unusedTotal + recurringFees;
+  var opex;
+  if (a.opexMethod === 'perFacility') opex = num(a.opexPerFacility) * facilityCount;
+  else if (a.opexMethod === 'perRelationship') opex = num(a.opexPerRelationship);
+  else opex = pct(a.opexPct) * opexBase;
+
+  var expectedLoss = fac.reduce(function(s,x){ return s + x.expectedLoss; }, 0);
+  var taxRate = pct(a.taxRate);
+  var preTax = nii + totalFees - opex - expectedLoss;
+  var tax = preTax > 0 ? preTax * taxRate : 0; // no tax benefit on a loss in a single deal view
+  var afterTax = preTax - tax;
+
+  var rwa = fac.reduce(function(s,x){ return s + x.rwa; }, 0);
+  var targetCapRatio = pct(a.targetCapRatio);
+  var allocatedCapital = rwa * targetCapRatio;
+  var econCapitalProvided = num(a.econCapital) > 0;
+  var econCapital = econCapitalProvided ? num(a.econCapital) : allocatedCapital;
+
+  var roe = allocatedCapital > 0 ? afterTax / allocatedCapital : null;
+  // RAROC = pre-tax risk-adjusted return ÷ economic capital. When no economic capital is supplied it
+  // falls back to regulatory allocated capital, in which case RAROC = ROE / (1 - tax) — see labels.
+  var raroc = econCapital > 0 ? preTax / econCapital : null;
+  var hurdle = pct(a.hurdle);
+  var createsValue = roe != null ? roe >= hurdle : null;
+
+  // NPV — upfront fees recognized at year 0; each facility's spread/unused income and expected loss
+  // run only through its OWN life, so income steps down as shorter facilities mature. Deposits and
+  // recurring fees persist across the whole horizon.
+  var horizon = Math.round(Math.max(maxLife(fac), 1));
+  var disc = pct(a.discountRate);
+  var npvRecurring = 0, lifeAfterTaxSum = 0;
+  for (var t = 1; t <= horizon; t++){
+    var yrSpread = 0, yrUnused = 0, yrEL = 0, aliveCount = 0;
+    for (var i = 0; i < fac.length; i++){
+      if (fac[i].life >= t){ yrSpread += fac[i].spreadIncome; yrUnused += fac[i].unusedIncome; yrEL += fac[i].expectedLoss; aliveCount++; }
+    }
+    var yrRevenue = (yrSpread + dep.value) + (yrUnused + recurringFees);
+    var yrOpex;
+    if (a.opexMethod === 'perFacility') yrOpex = num(a.opexPerFacility) * aliveCount;
+    else if (a.opexMethod === 'perRelationship') yrOpex = num(a.opexPerRelationship);
+    else yrOpex = pct(a.opexPct) * yrRevenue;
+    var yrPreTax = yrRevenue - yrOpex - yrEL;
+    var yrAfterTax = yrPreTax - (yrPreTax > 0 ? yrPreTax * taxRate : 0);
+    lifeAfterTaxSum += yrAfterTax;
+    npvRecurring += yrAfterTax / Math.pow(1 + disc, t);
+  }
+  var npv = upfrontTotalAbs * (1 - taxRate) + npvRecurring;
+  var lifeRoe = allocatedCapital > 0 ? (lifeAfterTaxSum / horizon) / allocatedCapital : null;
+  var eva = roe != null ? (roe - hurdle) * allocatedCapital : null;
+
+  return { fac:fac, dep:dep, nii:nii, assetSpread:assetSpread, depositValue:dep.value,
+           unusedTotal:unusedTotal, upfrontAnnualizedTotal:upfrontAnnualizedTotal,
+           recurringFees:recurringFees, totalFees:totalFees, revenue:revenue, opex:opex,
+           expectedLoss:expectedLoss, preTax:preTax, tax:tax, afterTax:afterTax, rwa:rwa,
+           targetCapRatio:targetCapRatio, allocatedCapital:allocatedCapital, econCapital:econCapital,
+           econCapitalProvided:econCapitalProvided,
+           roe:roe, raroc:raroc, lifeRoe:lifeRoe, hurdle:hurdle, createsValue:createsValue, npv:npv, horizon:horizon,
+           eva:eva, taxRate:taxRate, facilityCount:facilityCount };
+}
+if (typeof module !== 'undefined' && module.exports){
+  module.exports = { num:num, pct:pct, computeFacility:computeFacility, computeDeposits:computeDeposits, rollup:rollup };
+}
+// ===ENGINE-END===
+</script>
+
+<script>
+/* ---------- icons (Lucide-style) ---------- */
+var ICONS = {
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  printer:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>',
+  sparkles:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8-5.8 1.9 5.8 1.9L12 18.4l1.9-5.8 5.8-1.9-5.8-1.9z"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="m9 18 6-6-6-6"/></svg>'
+};
+
+/* ---------- expand placeholders ({{TIP:..}}, {{ICON}}) ---------- */
+(function expandTemplates(){
+  function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function tipHTML(text){
+    // The help text goes in aria-label so screen readers announce it; the bubble is a visual duplicate.
+    return '<button type="button" class="info" aria-label="'+escAttr(text)+'"><span aria-hidden="true">'+ICONS.info+'</span><span class="bubble" aria-hidden="true">'+text+'</span></button>';
+  }
+  function expand(html){
+    return html
+      .replace(/\{\{TIP:([\s\S]*?)\}\}/g, function(_,t){ return tipHTML(t.trim()); })
+      .replace(/\{\{SPARKLES\}\}/g, ICONS.sparkles)
+      .replace(/\{\{PLUS\}\}/g, ICONS.plus)
+      .replace(/\{\{PRINTER\}\}/g, ICONS.printer)
+      .replace(/\{\{TRASH\}\}/g, ICONS.trash)
+      .replace(/\{\{ALERT\}\}/g, ICONS.alert)
+      .replace(/\{\{CHEVRON\}\}/g, ICONS.chevron);
+  }
+  document.querySelectorAll('.wrap *').forEach(function(el){
+    for (var i=0;i<el.childNodes.length;i++){
+      var nd = el.childNodes[i];
+      if (nd.nodeType===3 && /\{\{/.test(nd.nodeValue)){
+        var span = document.createElement('span');
+        span.innerHTML = expand(nd.nodeValue);
+        el.replaceChild(span, nd);
+      }
+    }
+  });
+  var tpl = document.getElementById('facility-tpl');
+  tpl.innerHTML = expand(tpl.innerHTML);
+})();
+
+/* ---------- defaults / example ---------- */
+var TYPE_DEFAULTS = {
+  term:{rw:100,ccf:0,util:''}, revolver:{rw:100,ccf:50,util:40}, cre:{rw:100,ccf:50,util:''},
+  oore:{rw:100,ccf:50,util:''}, ci:{rw:100,ccf:50,util:''}, lc:{rw:100,ccf:50,util:0},
+  bridge:{rw:100,ccf:50,util:''}, construction:{rw:100,ccf:50,util:''}
+};
+var RATING_PD = {1:0.03,2:0.05,3:0.08,4:0.15,5:0.30,6:0.60,7:1.50,8:4.00,9:10.0,10:25.0};
+
+var EXAMPLE = [
+  { name:'Term Loan A', type:'term', committed:3000000, avgOut:3000000, util:'', life:5, rateMode:'allIn', allInRate:7.00, spread:2.50, upfrontFee:15000, unusedFeePct:0, rating:'5', pd:0.30, lgd:40, riskWeight:100, ccf:0 },
+  { name:'Revolver', type:'revolver', committed:2000000, avgOut:0, util:40, life:3, rateMode:'spread', allInRate:7.00, spread:2.50, upfrontFee:10000, unusedFeePct:0.25, rating:'6', pd:0.60, lgd:40, riskWeight:100, ccf:50 }
+];
+
+/* ---------- formatters ---------- */
+function fmtUSD(v){ if(v==null||!isFinite(v)) return '—'; return (v<0?'-':'')+'$'+Math.abs(Math.round(v)).toLocaleString('en-US'); }
+function fmtUSDk(v){ if(v==null||!isFinite(v)) return '—'; var a=Math.abs(v); if(a>=1000) return (v<0?'-':'')+'$'+(Math.abs(v)/1000).toFixed(0)+'k'; return fmtUSD(v); }
+function fmtPct(v,d){ if(v==null||!isFinite(v)) return '—'; return (v*100).toFixed(d==null?1:d)+'%'; }
+
+/* ---------- facility DOM ---------- */
+var facWrap = document.getElementById('facilities');
+var tpl = document.getElementById('facility-tpl');
+
+function readFacility(card){
+  var o = {};
+  card.querySelectorAll('[data-x]').forEach(function(el){ o[el.getAttribute('data-x')] = el.value; });
+  var modeBtn = card.querySelector('[data-x="rateMode"] button.on');
+  o.rateMode = modeBtn ? modeBtn.getAttribute('data-mode') : 'allIn';
+  return o;
+}
+
+function makeFacility(data){
+  var node = tpl.content.firstElementChild.cloneNode(true);
+  node.querySelectorAll('input,select').forEach(function(e){ e.setAttribute('autocomplete','off'); });
+  // remove
+  node.querySelector('.fac-remove').addEventListener('click', function(){ node.remove(); renumber(); recompute(); });
+  // pricing toggle
+  node.querySelectorAll('[data-x="rateMode"] button').forEach(function(b){
+    b.addEventListener('click', function(){
+      node.querySelectorAll('[data-x="rateMode"] button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      node.querySelector('.mode-allIn').style.display = b.getAttribute('data-mode')==='allIn'?'':'none';
+      node.querySelector('.mode-spread').style.display = b.getAttribute('data-mode')==='spread'?'':'none';
+      recompute();
+    });
+  });
+  // type → defaults
+  node.querySelector('[data-x="type"]').addEventListener('change', function(e){
+    var d = TYPE_DEFAULTS[e.target.value]; if(!d) return;
+    node.querySelector('[data-x="riskWeight"]').value = d.rw;
+    node.querySelector('[data-x="ccf"]').value = d.ccf;
+    // Always set utilization (clearing it for term-type facilities) so a Revolver's 40% can't carry
+    // over and silently force a term loan's avg outstanding to 40% of committed.
+    node.querySelector('[data-x="util"]').value = (d.util === '' ? '' : d.util);
+    recompute();
+  });
+  // rating → PD/LGD (only if grid on)
+  node.querySelector('[data-x="rating"]').addEventListener('change', function(e){
+    if (!document.getElementById('useGrid').checked) return;
+    var pd = RATING_PD[e.target.value];
+    if (pd!=null){ node.querySelector('[data-x="pd"]').value = pd; node.querySelector('[data-x="lgd"]').value = 40; }
+    recompute();
+  });
+  if (data) fillFacility(node, data);
+  return node;
+}
+
+function fillFacility(node, d){
+  node.querySelectorAll('[data-x]').forEach(function(el){
+    var k = el.getAttribute('data-x');
+    if (k==='rateMode' || k==null) return;
+    if (d[k] !== undefined && d[k] !== null) el.value = d[k];
+  });
+  // pricing toggle state
+  var mode = d.rateMode || 'allIn';
+  node.querySelectorAll('[data-x="rateMode"] button').forEach(function(b){
+    var on = b.getAttribute('data-mode')===mode; b.classList.toggle('on', on);
+  });
+  node.querySelector('.mode-allIn').style.display = mode==='allIn'?'':'none';
+  node.querySelector('.mode-spread').style.display = mode==='spread'?'':'none';
+}
+
+function renumber(){
+  facWrap.querySelectorAll('.facility').forEach(function(card, i){
+    var nm = card.querySelector('[data-x="name"]').value;
+    card.querySelector('.fac-title').textContent = nm ? nm : ('Facility ' + (i+1));
+  });
+}
+
+function addFacility(data){ facWrap.appendChild(makeFacility(data)); renumber(); }
+
+/* ---------- assumptions / deposits / fees readers ---------- */
+function readAssumptions(){
+  var a = {};
+  document.querySelectorAll('[data-a]').forEach(function(el){
+    var k = el.getAttribute('data-a');
+    a[k] = (el.type==='checkbox') ? el.checked : el.value;
+  });
+  return a;
+}
+function readBucket(attr){
+  var o = {};
+  document.querySelectorAll('['+attr+']').forEach(function(el){ o[el.getAttribute(attr)] = el.value; });
+  return o;
+}
+
+/* ---------- typenames ---------- */
+var TYPE_LABEL = { term:'Term Loan', revolver:'Revolver', cre:'CRE', oore:'Owner-Occ RE', ci:'Equipment / C&I', lc:'Letter of Credit', bridge:'Bridge', construction:'Construction' };
+
+/* ---------- validation ---------- */
+function facilityWarnings(o){
+  var w = [];
+  if (pctNum(o.lgd) > 100) w.push('LGD is above 100%.');
+  if (pctNum(o.util) > 100) w.push('Utilization is above 100%.');
+  if (toNum(o.util) <= 0 && toNum(o.avgOut) > toNum(o.committed) && toNum(o.committed) > 0) w.push('Avg outstanding exceeds the committed amount.');
+  if (toNum(o.pd) < 0 || pctNum(o.pd) > 100) w.push('PD looks out of range (0–100%).');
+  if (toNum(o.life) <= 0 && toNum(o.upfrontFee) > 0) w.push('Set a life > 0 to amortize the upfront fee.');
+  if (toNum(o.committed) <= 0) w.push('Committed amount is 0.');
+  if (toNum(o.pd) <= 0) w.push('PD is 0 — no expected loss is being modeled.');
+  return w;
+}
+function toNum(v){ if(v===''||v==null) return 0; var n=parseFloat(String(v).replace(/[,$\s%]/g,'')); return isFinite(n)?n:0; }
+function pctNum(v){ return toNum(v); }
+
+/* ---------- recompute ---------- */
+function recompute(){
+  var a = readAssumptions();
+  var cards = Array.prototype.slice.call(facWrap.querySelectorAll('.facility'));
+  var facInputs = cards.map(readFacility);
+  var deposits = readBucket('data-d');
+  var fees = readBucket('data-f');
+
+  var r = rollup(facInputs, deposits, fees, a);
+
+  // per-facility strips + warnings
+  cards.forEach(function(card, i){
+    var fx = r.fac[i]; var inp = facInputs[i];
+    set(card.querySelector('[data-o="avgOut"]'), fmtUSD(fx.avgOut));
+    set(card.querySelector('[data-o="ead"]'), fmtUSD(fx.ead));
+    set(card.querySelector('[data-o="rwa"]'), fmtUSD(fx.rwa));
+    set(card.querySelector('[data-o="el"]'), fmtUSD(fx.expectedLoss));
+    set(card.querySelector('[data-o="spread"]'), fmtUSD(fx.spreadIncome));
+    var facCap = fx.rwa * (toNum(a.targetCapRatio)/100);
+    var facTax = toNum(a.taxRate)/100;
+    var facPreTax = fx.spreadIncome + fx.unusedIncome + fx.upfrontAnnualized - fx.expectedLoss;
+    var facNet = facPreTax - (facPreTax > 0 ? facPreTax * facTax : 0);
+    set(card.querySelector('[data-o="roe"]'), facCap>0 ? fmtPct(facNet/facCap) : '—');
+    var warns = facilityWarnings(inp);
+    var box = card.querySelector('.warn');
+    if (warns.length){ box.classList.add('show'); card.querySelector('[data-o="warn"]').textContent = warns.join(' '); }
+    else { box.classList.remove('show'); }
+  });
+  renumber();
+
+  // deposits strip
+  set(document.getElementById('d-total'), fmtUSD(r.dep.total));
+  set(document.getElementById('d-value'), fmtUSD(r.dep.value));
+  set(document.getElementById('d-spread'), fmtPct(r.dep.avgSpread, 2));
+
+  // KPIs (live band + summary). "capLight" = real income but no risk-weighted capital (deposit/fee-led).
+  var capLight = (r.roe == null && r.afterTax > 0);
+  var roeTxt = r.roe==null ? (capLight ? 'n/m' : '—') : fmtPct(r.roe);
+  set(document.getElementById('k-roe'), roeTxt); set(document.getElementById('s-roe'), roeTxt); set(document.getElementById('b-roe'), roeTxt);
+  var rarocTxt = r.raroc==null ? (capLight ? 'n/m' : '—') : fmtPct(r.raroc);
+  set(document.getElementById('k-raroc'), rarocTxt); set(document.getElementById('s-raroc'), rarocTxt); set(document.getElementById('b-raroc'), rarocTxt);
+  set(document.getElementById('k-npv'), fmtUSDk(r.npv)); set(document.getElementById('s-npv'), fmtUSD(r.npv)); set(document.getElementById('b-npv'), fmtUSD(r.npv));
+  set(document.getElementById('s-cap'), fmtUSD(r.allocatedCapital));
+  set(document.getElementById('b-liferoe'), r.lifeRoe==null ? (capLight ? 'n/m' : '—') : fmtPct(r.lifeRoe));
+  document.getElementById('k-roe-sub').textContent = (r.roe==null && capLight) ? 'no capital allocated — see NPV' : 'on ' + fmtUSD(r.allocatedCapital) + ' capital';
+  // RAROC sub-label: honest about the capital base actually used
+  set(document.getElementById('k-raroc-sub'), r.econCapitalProvided ? 'pre-tax ÷ economic capital' : 'pre-tax ÷ regulatory capital (= ROE ÷ (1−tax))');
+
+  // verdict (live band) + mirror into the print summary
+  var vEl = document.getElementById('k-verdict');
+  var vSub = document.getElementById('k-verdict-sub');
+  if (r.createsValue==null){
+    if (capLight){ vEl.className='verdict note'; vEl.innerHTML=ICONS.sparkles+' Capital-light'; vSub.textContent='fee/deposit income, no credit capital'; }
+    else { vEl.className='verdict'; vEl.innerHTML='—'; vSub.textContent=''; }
+  }
+  else if (r.createsValue){ vEl.className='verdict good'; vEl.innerHTML=ICONS.check+' Creates value'; vSub.textContent='ROE beats '+fmtPct(r.hurdle)+' hurdle'; }
+  else { vEl.className='verdict bad'; vEl.innerHTML=ICONS.x+' Below hurdle'; vSub.textContent='under '+fmtPct(r.hurdle)+' hurdle'; }
+  var sVerdict = document.getElementById('s-verdict');
+  if (sVerdict){ sVerdict.className = vEl.className; sVerdict.innerHTML = vEl.innerHTML; }
+
+  // income build
+  set(document.getElementById('b-nii'), fmtUSD(r.nii));
+  set(document.getElementById('b-spread'), fmtUSD(r.assetSpread));
+  set(document.getElementById('b-depval'), fmtUSD(r.depositValue));
+  set(document.getElementById('b-fees'), fmtUSD(r.totalFees));
+  set(document.getElementById('b-opex'), '(' + fmtUSD(r.opex) + ')');
+  set(document.getElementById('b-el'), '(' + fmtUSD(r.expectedLoss) + ')');
+  set(document.getElementById('b-pretax'), fmtUSD(r.preTax));
+  set(document.getElementById('b-tax'), '(' + fmtUSD(r.tax) + ')');
+  set(document.getElementById('b-aftertax'), fmtUSD(r.afterTax));
+  // capital
+  set(document.getElementById('b-rwa'), fmtUSD(r.rwa));
+  set(document.getElementById('b-capratio'), fmtPct(r.targetCapRatio));
+  set(document.getElementById('b-cap'), fmtUSD(r.allocatedCapital));
+  set(document.getElementById('b-econcap'), fmtUSD(r.econCapital));
+  set(document.getElementById('b-hurdle'), fmtPct(r.hurdle));
+  set(document.getElementById('b-eva'), fmtUSD(r.eva));
+
+  // facility table
+  var tb = document.getElementById('ftbody'); tb.innerHTML='';
+  r.fac.forEach(function(fx, i){
+    var facCap = fx.rwa * r.targetCapRatio;
+    var facPreTax = fx.spreadIncome + fx.unusedIncome + fx.upfrontAnnualized - fx.expectedLoss;
+    var facNet = facPreTax - (facPreTax > 0 ? facPreTax * r.taxRate : 0);
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+(fx.name||('Facility '+(i+1)))+'</td>'+
+      '<td>'+(TYPE_LABEL[fx.type]||fx.type||'')+'</td>'+
+      '<td class="r">'+fmtUSD(fx.committed)+'</td>'+
+      '<td class="r">'+fmtUSD(fx.avgOut)+'</td>'+
+      '<td class="r">'+fmtPct(fx.assetRate,2)+'</td>'+
+      '<td class="r">'+fmtUSD(fx.rwa)+'</td>'+
+      '<td class="r">'+fmtUSD(fx.expectedLoss)+'</td>'+
+      '<td class="r">'+(facCap>0?fmtPct(facNet/facCap):'—')+'</td>';
+    tb.appendChild(tr);
+  });
+
+  // drivers line
+  var drivers = [];
+  drivers.push(['Loan spread income', r.assetSpread]);
+  drivers.push(['Deposit value', r.depositValue]);
+  drivers.push(['Fee income', r.totalFees]);
+  drivers.sort(function(x,y){ return y[1]-x[1]; });
+  var dtxt = drivers.filter(function(d){ return d[1]>0; }).map(function(d){ return d[0]+' ('+fmtUSD(d[1])+')'; }).join(', ');
+  document.getElementById('drivers').textContent = (r.roe==null && !capLight)
+    ? 'Add a facility with a committed amount and risk weight to compute an ROE.'
+    : (capLight
+        ? 'Capital-light relationship: ' + (dtxt||'—') + '. No risk-weighted credit, so there is no capital base for an ROE — judge it on the ' + fmtUSD(r.npv) + ' NPV and ' + fmtUSD(r.afterTax) + ' after-tax income.'
+        : 'Biggest contributors: ' + (dtxt||'—') + '. Expected loss of ' + fmtUSD(r.expectedLoss) + ' and op-ex of ' + fmtUSD(r.opex) + ' net against revenue of ' + fmtUSD(r.revenue) + '.');
+}
+function set(el, txt){ if(el) el.textContent = txt; }
+
+/* ---------- wiring ---------- */
+document.getElementById('addFacility').addEventListener('click', function(){ addFacility(); });
+document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+document.getElementById('clearBtn').addEventListener('click', function(){
+  if (!confirm('Clear all facilities, deposits and fees? This cannot be undone.')) return;
+  facWrap.innerHTML=''; addFacility();
+  ['ddaBal','ibBal','ibRate','mmBal','mmRate','cdBal','cdRate','treasuryFees'].forEach(function(k){ var el=document.querySelector('[data-d="'+k+'"]'); if(el) el.value=0; });
+  ['creditUpfrontOneTime','creditRecurring','tm','fx','cards','wire'].forEach(function(k){ var el=document.querySelector('[data-f="'+k+'"]'); if(el) el.value=0; });
+  recompute();
+});
+document.getElementById('exampleBtn').addEventListener('click', function(){
+  if (!confirm('Replace everything with the built-in example? Your entered data will be lost.')) return;
+  loadExample();
+});
+document.getElementById('opexMethod').addEventListener('change', function(e){
+  document.querySelectorAll('[data-opex]').forEach(function(el){ el.style.display = el.getAttribute('data-opex')===e.target.value?'':'none'; });
+  recompute();
+});
+// recompute on any input
+document.addEventListener('input', function(e){ if (e.target.closest('.wrap')) recompute(); });
+document.addEventListener('change', function(e){ if (e.target.closest('.wrap')) recompute(); });
+// Esc dismisses an open tooltip (it shows on focus, including a tap on touch).
+document.addEventListener('keydown', function(e){
+  if (e.key==='Escape' && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('info')) document.activeElement.blur();
+});
+
+function loadExample(){
+  facWrap.innerHTML=''; EXAMPLE.forEach(function(d){ addFacility(d); }); recompute();
+}
+
+/* ---------- init ---------- */
+// autocomplete=off stops browsers from restoring stale field values on reload (which desynced the
+// pricing toggle). Back/forward (bfcache) restores the user's real state intact — we don't wipe it.
+document.querySelectorAll('input,select').forEach(function(e){ e.setAttribute('autocomplete','off'); });
+loadExample();
+</script>
+</body>
+</html>
